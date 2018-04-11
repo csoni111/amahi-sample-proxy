@@ -11,6 +11,7 @@ import (
 	"net"
 	"github.com/gorilla/mux"
 	"encoding/json"
+	"net/url"
 )
 
 const HOST_ADDR = ":8000"
@@ -101,6 +102,19 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 	fsInfo := FSInfo{}
 	handle(json.NewDecoder(r.Body).Decode(&fsInfo))
 	handle(r.Body.Close())
+
+	if u, err := url.Parse("//" + fsInfo.RelayAddr); err == nil {
+		u.Scheme = "https"
+		fsInfo.RelayAddr = u.String()
+	}
+
+	if u, err := url.Parse("//" + fsInfo.LocalAddr); err == nil {
+		u.Scheme = "http"
+		if u.Port() == "" {
+			u.Host += ":4563"
+		}
+		fsInfo.LocalAddr = u.String()
+	}
 
 	// re-purpose the connection.
 	conn, _, err := w.(http.Hijacker).Hijack()
