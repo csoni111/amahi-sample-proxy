@@ -41,11 +41,11 @@ type FSInfo struct {
 }
 
 func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
-	fs, exist := p.getFS(w, r)
+	fs, exist := p.getFS(r)
 
 	if !exist {
-		log.Println("Warning: Could not serve request because FS is not connected.")
-		http.NotFound(w, r)
+		// session token is missing or no such FS is connected
+		w.WriteHeader(http.StatusForbidden)
 		return nil
 	}
 
@@ -67,7 +67,7 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
-func (p *Proxy) getFS(w http.ResponseWriter, r *http.Request) (fs FS, exist bool) {
+func (p *Proxy) getFS(r *http.Request) (fs *FS, exist bool) {
 	// read the session token from header
 	token := r.Header.Get("Session")
 	if token == "" {
@@ -75,11 +75,10 @@ func (p *Proxy) getFS(w http.ResponseWriter, r *http.Request) (fs FS, exist bool
 		token = r.FormValue("session")
 		if token == "" {
 			// No session token sent in the request
-			w.WriteHeader(http.StatusForbidden)
-			return FS{}, false
+			return nil, false
 		}
 	}
-	fs, exist = p.fileServers[token]
+	*fs, exist = p.fileServers[token]
 	return
 }
 
@@ -142,13 +141,18 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Proxy) ServeClient(w http.ResponseWriter, r *http.Request) {
-	fs, exist := p.getFS(w, r)
-	if exist {
-		w.Header().Set("Content-Type", "application/json")
-		fsInfoJson, err := json.Marshal(fs.fsInfo)
-		handle(err)
-		w.Write(fsInfoJson)
+	fs, exist := p.getFS(r)
+
+	if !exist {
+		// session token is missing or no such FS is connected
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fsInfoJson, err := json.Marshal(fs.fsInfo)
+	handle(err)
+	w.Write(fsInfoJson)
 }
 
 func (p *Proxy) ServeProxyClient(w http.ResponseWriter, r *http.Request) {
