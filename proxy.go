@@ -94,7 +94,7 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
-func (p *Proxy) getFS(r *http.Request) (fs *FS, exist bool) {
+func (p *Proxy) getFS(r *http.Request) (fs FS, exist bool) {
 	// read the session token from header
 	token := r.Header.Get("Session")
 	if token == "" {
@@ -102,10 +102,10 @@ func (p *Proxy) getFS(r *http.Request) (fs *FS, exist bool) {
 		token = r.FormValue("session")
 		if token == "" {
 			// No session token sent in the request
-			return nil, false
+			return FS{}, false
 		}
 	}
-	*fs, exist = p.fileServers[token]
+	fs, exist = p.fileServers[token]
 	return
 }
 
