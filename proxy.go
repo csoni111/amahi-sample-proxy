@@ -84,6 +84,10 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 		u.Scheme = "https"
 	}
 
+	if _, exist := r.Header["Connection"]; exist {
+		r.Header.Del("Connection")
+	}
+
 	res, err := fs.clientConn.RoundTrip(r)
 	handle(err)
 
