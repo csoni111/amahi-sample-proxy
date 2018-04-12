@@ -12,9 +12,11 @@ import (
 	"github.com/gorilla/mux"
 	"encoding/json"
 	"net/url"
+	"time"
+	"context"
 )
 
-const HOST_ADDR = ":8000"
+const HostAddr = ":8000"
 
 // placeholder for proper error handling.
 func handle(err error) {
@@ -28,9 +30,34 @@ type Proxy struct {
 }
 
 type FS struct {
-	clientConn *http2.ClientConn
-	conn       net.Conn
-	fsInfo     FSInfo
+	clientConn	*http2.ClientConn
+	conn		net.Conn
+	session		string
+	fsInfo		FSInfo
+}
+
+func (p Proxy) pingFSPeriodically(fs FS) {
+	const period = 59 * time.Second // time spent sleeping
+
+	for {
+		time.Sleep(period)
+		if fs.clientConn.CanTakeNewRequest() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15 * time.Second)
+			err := fs.clientConn.Ping(ctx)
+			cancel()
+			if err != nil {
+				// ping to FS failed
+				fmt.Println("FS disconnected")
+				p.removeFS(fs)
+				return
+			}
+		} else {
+			// connection has closed
+			fmt.Println("FS disconnected")
+			p.removeFS(fs)
+			return
+		}
+	}
 }
 
 type FSInfo struct {
@@ -51,7 +78,7 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 
 	u := r.URL
 	if u.Host == "" {
-		u.Host = HOST_ADDR
+		u.Host = HostAddr
 	}
 	if u.Scheme == "" {
 		u.Scheme = "https"
@@ -82,6 +109,14 @@ func (p *Proxy) getFS(r *http.Request) (fs *FS, exist bool) {
 	return
 }
 
+func (p *Proxy) removeFS(fs FS) {
+	if oldFs, exist := p.fileServers[fs.session]; exist && oldFs == fs {
+		fs.conn.Close()
+		delete(p.fileServers, fs.session)
+		fmt.Println("FS removed")
+	}
+}
+
 func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 	// read the session token
 	token := r.Header.Get("Api-Key")
@@ -89,6 +124,8 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	fmt.Println("FS connected")
 
 	// clean up the old connection if any
 	if fs, exist := p.fileServers[token]; exist {
@@ -135,9 +172,12 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 	clientConn, err := transport.NewClientConn(conn)
 	handle(err)
 
-	p.fileServers[token] = FS{clientConn, conn, fsInfo}
+	fs := FS{clientConn, conn, token, fsInfo}
+	p.fileServers[token] = fs
+	fmt.Println("FS added")
 
-	fmt.Println("FS connected")
+	// ping the fs periodically in a goroutine to see if the connection is up
+	go p.pingFSPeriodically(fs)
 }
 
 func (p *Proxy) ServeClient(w http.ResponseWriter, r *http.Request) {
@@ -185,13 +225,13 @@ func main() {
 	router.PathPrefix("/").HandlerFunc(proxy.ServeProxyClient)
 	server.Handler = router
 
-	server.Addr = HOST_ADDR
+	server.Addr = HostAddr
 
 	if *tls {
-		fmt.Println("Serving on", HOST_ADDR, "with TLS")
+		fmt.Println("Serving on", HostAddr, "with TLS")
 		handle(server.ListenAndServeTLS(certFile, keyFile))
 	} else {
-		fmt.Println("Serving on", HOST_ADDR, "*without* TLS")
+		fmt.Println("Serving on", HostAddr, "*without* TLS")
 		handle(server.ListenAndServe())
 	}
 }
