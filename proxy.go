@@ -224,7 +224,7 @@ func main() {
 	server := new(http.Server)
 	router := mux.NewRouter()
 	router.HandleFunc("/fs", proxy.ServeFS).Methods("PUT")
-	router.HandleFunc("/client", proxy.ServeClient).Methods("PUT")
+	router.HandleFunc("/client", proxy.ServeClient).Methods("PUT", "GET")
 	router.HandleFunc("/debug", proxy.DebugURL).Methods("GET")
 	router.PathPrefix("/").HandlerFunc(proxy.ServeProxyClient)
 	server.Handler = router
