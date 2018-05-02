@@ -18,6 +18,8 @@ import (
 
 const HostAddr = ":8000"
 
+var logClient = NewLogClient("connection", "event")
+
 // placeholder for proper error handling.
 func handle(err error) {
 	if err != nil {
@@ -34,6 +36,13 @@ type FS struct {
 	conn		net.Conn
 	session		string
 	fsInfo		FSInfo
+}
+
+type FSInfo struct {
+	Version   string `json:"version"`
+	LocalAddr string `json:"local_addr"`
+	RelayAddr string `json:"relay_addr"`
+	Arch      string `json:"arch"`
 }
 
 func (p Proxy) pingFSPeriodically(fs FS) {
@@ -58,13 +67,6 @@ func (p Proxy) pingFSPeriodically(fs FS) {
 			return
 		}
 	}
-}
-
-type FSInfo struct {
-	Version   string `json:"version"`
-	LocalAddr string `json:"local_addr"`
-	RelayAddr string `json:"relay_addr"`
-	Arch      string `json:"arch"`
 }
 
 func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
@@ -114,6 +116,7 @@ func (p *Proxy) getFS(r *http.Request) (fs FS, exist bool) {
 }
 
 func (p *Proxy) removeFS(fs FS) {
+	logClient.Log(Disconnection, &fs.fsInfo, fs.session)
 	if oldFs, exist := p.fileServers[fs.session]; exist && oldFs == fs {
 		fs.conn.Close()
 		delete(p.fileServers, fs.session)
@@ -180,6 +183,9 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 	p.fileServers[token] = fs
 	fmt.Println("FS added")
 
+	// Log the new fs connection
+	logClient.Log(Connection, &fsInfo, token)
+
 	// ping the fs periodically in a goroutine to see if the connection is up
 	go p.pingFSPeriodically(fs)
 }
@@ -217,6 +223,9 @@ func main() {
 
 	tls := flag.Bool("t", false, "enable TLS")
 	flag.Parse()
+
+	go logClient.Start()
+	defer logClient.Stop()
 
 	proxy := new(Proxy)
 	proxy.fileServers = make(map[string]FS)
