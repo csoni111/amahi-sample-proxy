@@ -25,3 +25,6 @@ secrets.go
 
 bin
 pkg
+
+# SQLite DB
+*.sqlite

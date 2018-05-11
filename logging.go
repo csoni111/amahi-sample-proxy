@@ -1,49 +1,76 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"log"
-	"net/http"
-	"os"
 	"time"
-	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"database/sql"
+	"os"
 )
 
 // Logging client structure.
 type LogClient struct {
-	url 	 string
-	hostname string
-	channel  chan *ConnectionLog
-	client   *http.Client
+	channel chan *ConnectionLog
+	db      *sql.DB
 }
 
 // ConnectionEvent for connection log
-type ConnectionEvent string
+type ConnectionEvent int
 
-const  (
-	Connection 	  ConnectionEvent = "connect"
-	Disconnection ConnectionEvent = "disconnect"
-	Streaming 	  ConnectionEvent = "stream"
+const (
+	Connection    ConnectionEvent = 1
+	Disconnection ConnectionEvent = 2
+	Streaming     ConnectionEvent = 3
 )
 
 // ConnectionLog structure.
 type ConnectionLog struct {
-	Timestamp time.Time  	  `json:"@timestamp"`
-	Event     ConnectionEvent `json:"event"`
-	FSInfo    *FSInfo    	  `json:"fs"`
-	Token	  string		  `json:"token"`
+	Timestamp int64
+	Event     ConnectionEvent
+	FSInfo    *FSInfo
+	Token     string
 }
 
 // New LogClient.
-func NewLogClient(index string, typ string) *LogClient {
-	hostname, _ := os.Hostname()
-	return &LogClient{
-		url:  	  fmt.Sprintf("http://localhost:9200/%s/%s", index, typ),
-		hostname: hostname,
-		client:   &http.Client{Timeout: time.Duration(5) * time.Second},
-		channel:  make(chan *ConnectionLog),
+func NewLogClient(dbPath string) (*LogClient, error) {
+	db, err := initDb(dbPath)
+	if err == nil {
+		return &LogClient{
+			db:      db,
+			channel: make(chan *ConnectionLog),
+		}, nil
+	} else {
+		log.Fatal(err)
+		return &LogClient{}, err
 	}
+}
+
+func initDb(dbPath string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		return nil, err
+	}
+	_, err = os.Open(dbPath)
+	if err != nil {
+		fsTable := `CREATE TABLE fs (id INTEGER NOT NULL PRIMARY KEY, token VARCHAR(50) NOT NULL UNIQUE, 
+					version NUMERIC, local_addr VARCHAR(30), relay_addr VARCHAR(30), arch VARCHAR(30));`
+		_, err = db.Exec(fsTable)
+		if err != nil {
+			return nil, err
+		}
+
+		connTable := `CREATE TABLE conn_log (id INTEGER NOT NULL PRIMARY KEY, timestamp INTEGER NOT NULL, 
+					  event SMALLINT NOT NULL, fs_id INTEGER, FOREIGN KEY (fs_id) REFERENCES fs(id));`
+		_, err = db.Exec(connTable)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 // Start log listener.
@@ -61,27 +88,35 @@ func (l *LogClient) Start() {
 // Stop log listener.
 func (l *LogClient) Stop() {
 	close(l.channel)
+	l.db.Close()
 }
 
 func (l *LogClient) Log(connEvent ConnectionEvent, fsInfo *FSInfo, token string) {
 	l.channel <- &ConnectionLog{
-		Event:   	connEvent,
-		Timestamp:  time.Now(),
-		FSInfo:     fsInfo,
-		Token:		token,
+		Event:     connEvent,
+		Timestamp: time.Now().Unix(),
+		FSInfo:    fsInfo,
+		Token:     token,
 	}
 }
 
 func (l *LogClient) send(c *ConnectionLog) {
-	enc, _ := json.Marshal(c)
 
-	resp, err := l.client.Post(l.url,"application/json", bytes.NewBuffer(enc))
+	var fsId int64
+	err := l.db.QueryRow("SELECT id FROM fs WHERE token = ?", c.Token).Scan(&fsId)
 	if err != nil {
-		log.Println(err)
+		res, err := l.db.Exec("INSERT INTO fs(token, version, local_addr, relay_addr, arch) VALUES (?, ?, ?, ?, ?)",
+			c.Token, c.FSInfo.Version, c.FSInfo.LocalAddr, c.FSInfo.RelayAddr, c.FSInfo.Arch)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		fsId, err = res.LastInsertId()
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		log.Printf("post request to url: %s failed with status: %d", l.url, resp.StatusCode)
+	_, err = l.db.Exec("INSERT INTO conn_log(timestamp, event, fs_id) VALUES(?, ?, ?)",
+		c.Timestamp, c.Event, fsId)
+	if err != nil {
+		log.Fatal(err)
 	}
 }

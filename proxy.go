@@ -18,7 +18,7 @@ import (
 
 const HostAddr = ":8000"
 
-var logClient = NewLogClient("connection", "event")
+var logClient *LogClient
 
 // placeholder for proper error handling.
 func handle(err error) {
@@ -222,10 +222,18 @@ func main() {
 	keyFile := "cert.key"
 
 	tls := flag.Bool("t", false, "enable TLS")
+	isLoggingEnabled := flag.Bool("l", true, "enable logging")
+	dbPath := flag.String("d", "./proxydb.sqlite", "sqlite db path")
 	flag.Parse()
 
-	go logClient.Start()
-	defer logClient.Stop()
+	if *isLoggingEnabled {
+		var err error
+		logClient, err = NewLogClient(*dbPath)
+		handle(err)
+
+		go logClient.Start()
+		defer logClient.Stop()
+	}
 
 	proxy := new(Proxy)
 	proxy.fileServers = make(map[string]FS)
