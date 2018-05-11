@@ -232,6 +232,7 @@ func main() {
 		handle(err)
 
 		go logClient.Start()
+		go logClient.StatsMonitor()
 		defer logClient.Stop()
 	}
 
