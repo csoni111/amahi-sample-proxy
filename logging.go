@@ -28,10 +28,10 @@ const (
 
 // ConnectionLog structure.
 type ConnectionLog struct {
-	Timestamp int64
-	Event     ConnectionEvent
-	FSInfo    *FSInfo
-	Token     string
+	Timestamp int64				`json:"timestamp"`
+	Event     ConnectionEvent	`json:"event"`
+	FSInfo    *FSInfo			`json:"fs_info"`
+	Token     string			`json:"token"`
 }
 
 // New LogClient.

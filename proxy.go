@@ -32,10 +32,10 @@ type Proxy struct {
 }
 
 type FS struct {
-	clientConn	*http2.ClientConn
-	conn		net.Conn
-	session		string
-	fsInfo		FSInfo
+	clientConn *http2.ClientConn
+	conn       net.Conn
+	session    string
+	fsInfo     FSInfo
 }
 
 type FSInfo struct {
@@ -51,7 +51,7 @@ func (p Proxy) pingFSPeriodically(fs FS) {
 	for {
 		time.Sleep(period)
 		if fs.clientConn.CanTakeNewRequest() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15 * time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			err := fs.clientConn.Ping(ctx)
 			cancel()
 			if err != nil {
@@ -237,6 +237,7 @@ func main() {
 	}
 
 	proxy := new(Proxy)
+	dashboard := Dashboard{dbPath: dbPath}
 	proxy.fileServers = make(map[string]FS)
 
 	server := new(http.Server)
@@ -244,6 +245,15 @@ func main() {
 	router.HandleFunc("/fs", proxy.ServeFS).Methods("PUT")
 	router.HandleFunc("/client", proxy.ServeClient).Methods("PUT", "GET")
 	router.HandleFunc("/debug", proxy.DebugURL).Methods("GET")
+
+	// Init dashboard router for serving dashboard
+	dashboard.InitDashboardRouter(router.PathPrefix("/dashboard").Subrouter())
+
+	// Static files handler
+	fileHandler := http.StripPrefix("/static", http.FileServer(http.Dir("./static")))
+	router.PathPrefix("/static/").Handler(fileHandler).Methods("GET")
+
+	// Serve Proxy Clients
 	router.PathPrefix("/").HandlerFunc(proxy.ServeProxyClient)
 	server.Handler = router
 
