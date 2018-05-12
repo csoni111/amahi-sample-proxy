@@ -72,9 +72,12 @@
     border: medium none;
 }
 
+div.dc-chart {
+    float: none !important;
+}
+
 div#unique-fs-number {
     text-align: center;
-    float: none !important;
 }
 
 span.number-display {
