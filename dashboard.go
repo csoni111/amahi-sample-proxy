@@ -16,6 +16,7 @@ type Dashboard struct {
 func (d *Dashboard) InitDashboardRouter(router *mux.Router) {
 	router.HandleFunc("/", d.dashboardHandler).Methods("GET")
 	router.HandleFunc("/fs.json", d.fsJson).Methods("GET")
+	router.HandleFunc("/connections.json", d.connJson).Methods("GET")
 }
 
 func (d *Dashboard) dashboardHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +43,27 @@ func (d *Dashboard) fsJson(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(allFS)
+}
+
+func (d *Dashboard) connJson(w http.ResponseWriter, r *http.Request) {
+	db := d.getDb()
+	defer db.Close()
+	rows, err := db.Query("SELECT timestamp, event FROM conn_log LIMIT 1000")
+	if err != nil {
+		handle(err)
+	}
+	defer rows.Close()
+	connections := make([]ConnectionLog, 0)
+	for rows.Next() {
+		var conn ConnectionLog
+		err = rows.Scan(&conn.Timestamp, &conn.Event)
+		if err != nil {
+			handle(err)
+		}
+		connections = append(connections, conn)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(connections)
 }
 
 func (d *Dashboard) getDb() (db *sql.DB) {

@@ -28,10 +28,10 @@ const (
 
 // ConnectionLog structure.
 type ConnectionLog struct {
-	Timestamp int64				`json:"timestamp"`
-	Event     ConnectionEvent	`json:"event"`
-	FSInfo    *FSInfo			`json:"fs_info"`
-	Token     string			`json:"token"`
+	Timestamp int64           `json:"timestamp"`
+	Event     ConnectionEvent `json:"event"`
+	fsInfo    *FSInfo
+	token     string
 }
 
 // New LogClient.
@@ -124,8 +124,8 @@ func (l *LogClient) Log(connEvent ConnectionEvent, fsInfo *FSInfo, token string)
 	l.channel <- &ConnectionLog{
 		Event:     connEvent,
 		Timestamp: time.Now().Unix(),
-		FSInfo:    fsInfo,
-		Token:     token,
+		fsInfo:    fsInfo,
+		token:     token,
 	}
 }
 
@@ -133,11 +133,11 @@ func (l *LogClient) send(c *ConnectionLog) {
 	var fsId int64
 
 	// query the db for fs given the session token
-	err := l.db.QueryRow("SELECT id FROM fs WHERE token = ?", c.Token).Scan(&fsId)
+	err := l.db.QueryRow("SELECT id FROM fs WHERE token = ?", c.token).Scan(&fsId)
 	if err != nil {
 		// add the new fs to db
 		res, err := l.db.Exec("INSERT INTO fs(token, version, local_addr, relay_addr, arch) VALUES (?, ?, ?, ?, ?)",
-			c.Token, c.FSInfo.Version, c.FSInfo.LocalAddr, c.FSInfo.RelayAddr, c.FSInfo.Arch)
+			c.token, c.fsInfo.Version, c.fsInfo.LocalAddr, c.fsInfo.RelayAddr, c.fsInfo.Arch)
 		if err != nil {
 			log.Fatal(err)
 			return
