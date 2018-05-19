@@ -1,0 +1,58 @@
+{{define "title"}}PFE Dashboard{{end}}
+
+{{define "body"}}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-10">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Connections Time Chart
+                </div>
+                <div id="conn-chart" class="chart-stage"></div>
+                <div class="chart-notes">
+                    Number of connections/disconnections with Time
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Number of Unique FS
+                </div>
+                <div id="unique-fs-number" class="chart-stage"></div>
+                <div class="chart-notes">
+                    Total number of unique file servers connected over time
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-4 col-md-3">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Version Pie Chart
+                </div>
+                <div id="version-pie" class="chart-stage"></div>
+            </div>
+        </div>
+        <div class="col-sm-8 col-md-5">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    FS Architecture Pie
+                </div>
+                <div id="arch-pie" class="chart-stage"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="container-fluid">
+    {{/*<p class="small text-muted"> © Copyright <a href="https://amahi.org">Amahi</a></p>*/}}
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="../../static/js/pfe-charts.js"></script>
+{{end}}

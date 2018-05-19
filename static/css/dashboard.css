@@ -84,3 +84,7 @@ span.number-display {
     font-size: 60pt;
     font-weight: bold;
 }
+
+#timespan {
+    margin: 15px 0;
+}

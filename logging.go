@@ -30,7 +30,7 @@ const (
 type ConnectionLog struct {
 	Timestamp int64           `json:"timestamp"`
 	Event     ConnectionEvent `json:"event"`
-	fsInfo    *FSInfo
+	fsInfo    *FSInfo		  `json:"fs_info"`
 	token     string
 }
 

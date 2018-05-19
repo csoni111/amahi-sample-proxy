@@ -246,8 +246,9 @@ func main() {
 	router.HandleFunc("/client", proxy.ServeClient).Methods("PUT", "GET")
 	router.HandleFunc("/debug", proxy.DebugURL).Methods("GET")
 
-	// Init dashboard router for serving dashboard
+	// Init dashboard and api router
 	dashboard.InitDashboardRouter(router.PathPrefix("/dashboard").Subrouter())
+	dashboard.InitApiRouter(router.PathPrefix("/api").Subrouter())
 
 	// Static files handler
 	fileHandler := http.StripPrefix("/static", http.FileServer(http.Dir("./static")))
