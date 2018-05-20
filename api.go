@@ -53,16 +53,16 @@ func (d *Dashboard) connJson(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var conn ConnectionLog
 		var fsId int64
-		err = rows.Scan(&conn.Timestamp, &conn.Event, fsId)
+		err = rows.Scan(&conn.Timestamp, &conn.Event, &fsId)
 		if err != nil {
 			handle(err)
 		}
 		if fsInfo, exist := allFS[fsId]; exist {
-			conn.fsInfo = &fsInfo
+			conn.FSInfo = &fsInfo
 		} else {
 			fsInfo = d.getFSInfo(db, fsId)
 			allFS[fsId] = fsInfo
-			conn.fsInfo = &fsInfo
+			conn.FSInfo = &fsInfo
 		}
 		connections = append(connections, conn)
 	}

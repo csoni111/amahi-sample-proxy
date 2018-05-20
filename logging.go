@@ -30,7 +30,7 @@ const (
 type ConnectionLog struct {
 	Timestamp int64           `json:"timestamp"`
 	Event     ConnectionEvent `json:"event"`
-	fsInfo    *FSInfo		  `json:"fs_info"`
+	FSInfo    *FSInfo         `json:"fs_info"`
 	token     string
 }
 
@@ -124,7 +124,7 @@ func (l *LogClient) Log(connEvent ConnectionEvent, fsInfo *FSInfo, token string)
 	l.channel <- &ConnectionLog{
 		Event:     connEvent,
 		Timestamp: time.Now().Unix(),
-		fsInfo:    fsInfo,
+		FSInfo:    fsInfo,
 		token:     token,
 	}
 }
@@ -137,7 +137,7 @@ func (l *LogClient) send(c *ConnectionLog) {
 	if err != nil {
 		// add the new fs to db
 		res, err := l.db.Exec("INSERT INTO fs(token, version, local_addr, relay_addr, arch) VALUES (?, ?, ?, ?, ?)",
-			c.token, c.fsInfo.Version, c.fsInfo.LocalAddr, c.fsInfo.RelayAddr, c.fsInfo.Arch)
+			c.token, c.FSInfo.Version, c.FSInfo.LocalAddr, c.FSInfo.RelayAddr, c.FSInfo.Arch)
 		if err != nil {
 			log.Fatal(err)
 			return
