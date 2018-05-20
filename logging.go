@@ -34,6 +34,14 @@ type ConnectionLog struct {
 	token     string
 }
 
+// System Stats structure.
+type Stat struct {
+	Timestamp int64  `json:"timestamp"`
+	RamFree   uint64 `json:"ram_free"`
+	DiskFree  uint64 `json:"disk_free"`
+	MemAlloc  uint64 `json:"mem_alloc"`
+}
+
 // New LogClient.
 func NewLogClient(dbPath string) (*LogClient, error) {
 	db, err := initDb(dbPath)
