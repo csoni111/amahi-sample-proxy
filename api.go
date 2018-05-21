@@ -93,7 +93,8 @@ func (d *Dashboard) systemStatsJson(w http.ResponseWriter, r *http.Request) {
 	var rows *sql.Rows
 	var err error
 	if t == 0 {
-		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc FROM stats ORDER BY id DESC")
+		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc, cpu_usage FROM stats " +
+			"ORDER BY id DESC")
 	} else {
 		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc, cpu_usage FROM stats "+
 			"WHERE timestamp > ? ORDER BY id DESC", t)
