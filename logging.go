@@ -38,10 +38,10 @@ type ConnectionLog struct {
 // System Stats structure.
 type Stat struct {
 	Timestamp int64   `json:"timestamp"`
-	RamFree   uint64  `json:"ram_free"`
-	DiskFree  uint64  `json:"disk_free"`
+	RamUsed   float64 `json:"ram_used"`
+	DiskUsed  float64 `json:"disk_used"`
 	MemAlloc  uint64  `json:"mem_alloc"`
-	CpuUsage  float64 `json:"cpu_usage"`
+	CpuUsed   float64 `json:"cpu_used"`
 }
 
 // New LogClient.
@@ -83,7 +83,7 @@ func initDb(dbPath string) (*sql.DB, error) {
 		}
 
 		statsTable := `CREATE TABLE stats (id INTEGER NOT NULL PRIMARY KEY, timestamp INTEGER NOT NULL,
-					   ram_free BIGINT, disk_free BIGINT, mem_alloc BIGINT, cpu_usage FLOAT);`
+					   ram_used FLOAT, disk_used FLOAT, mem_alloc BIGINT, cpu_used FLOAT);`
 		_, err = db.Exec(statsTable)
 		if err != nil {
 			return nil, err
@@ -116,8 +116,8 @@ func (l *LogClient) StatsMonitor() {
 		cpuUsage, _ := cpu.Percent(0, false)
 		var ms runtime.MemStats
 		runtime.ReadMemStats(&ms)
-		_, err := l.db.Exec("INSERT INTO stats(timestamp, ram_free, disk_free, mem_alloc, cpu_usage) " +
-			"VALUES(?, ?, ?, ?, ?)", time.Now().Unix(), vMemStat.Available, usageStat.Free, ms.Alloc, cpuUsage[0])
+		_, err := l.db.Exec("INSERT INTO stats(timestamp, ram_used, disk_used, mem_alloc, cpu_used) "+
+			"VALUES(?, ?, ?, ?, ?)", time.Now().Unix(), vMemStat.UsedPercent, usageStat.UsedPercent, ms.Alloc, cpuUsage[0])
 		if err != nil {
 			return
 		}

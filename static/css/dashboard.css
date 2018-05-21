@@ -76,13 +76,20 @@ div.dc-chart {
     float: none !important;
 }
 
-div#unique-fs-number {
+div.number-chart {
     text-align: center;
 }
 
 span.number-display {
-    font-size: 60pt;
     font-weight: bold;
+}
+
+div#mem-alloc-number {
+    font-size: 42pt;
+}
+
+div#unique-fs-number {
+    font-size: 60pt;
 }
 
 #timespan {

@@ -1,4 +1,4 @@
-let t = 6;
+let t = 1;
 $(document).ready(function () {
     $(document).on('change','#timespan',function(){
         t = $(this).find("option:selected").attr('value');

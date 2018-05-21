@@ -1,7 +1,7 @@
 {{define "title"}}PFE Dashboard{{end}}
 
 {{define "extracss"}}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.1/c3.min.css" rel="stylesheet" type="text/css" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.1/c3.min.css" rel="stylesheet" type="text/css"/>
 {{end}}
 
 {{define "body"}}
@@ -31,23 +31,55 @@
                 <div id="cpu-gauge-chart" class="chart-stage"></div>
             </div>
         </div>
+        <div class="col-sm-3">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Memory Allocated
+                </div>
+                <div id="mem-alloc-number" class="number-chart chart-stage">
+                    <span class="number-display"></span>
+                </div>
+                <div class="chart-notes">
+                    Current Memory Allocated to the program
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">
-        <div class="col-sm-4 col-md-3">
+        <div class="col-sm-6 col-md-6">
             <div class="chart-wrapper">
                 <div class="chart-title">
-                    Version Pie Chart
+                    Ram Usage with Time
                 </div>
-                <div id="version-pie" class="chart-stage"></div>
+                <div id="ram-chart" class="chart-stage"></div>
             </div>
         </div>
-        <div class="col-sm-8 col-md-5">
+        <div class="col-sm-6 col-md-6">
             <div class="chart-wrapper">
                 <div class="chart-title">
-                    FS Architecture Pie
+                    Disk Usage with Time
                 </div>
-                <div id="arch-pie" class="chart-stage"></div>
+                <div id="disk-chart" class="chart-stage"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6 col-md-6">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    CPU Usage with Time
+                </div>
+                <div id="cpu-chart" class="chart-stage"></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-6">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Memory Allocated with Time
+                </div>
+                <div id="mem-alloc-chart" class="chart-stage"></div>
             </div>
         </div>
     </div>
@@ -55,7 +87,7 @@
 </div>
 
 <div class="container-fluid">
-    {{/*<p class="small text-muted"> © Copyright <a href="https://amahi.org">Amahi</a></p>*/}}
+{{/*<p class="small text-muted"> © Copyright <a href="https://amahi.org">Amahi</a></p>*/}}
 </div>
 {{end}}
 

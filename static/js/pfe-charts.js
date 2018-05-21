@@ -1,6 +1,6 @@
-let t = 6;
+let t = 1;
 $(document).ready(function () {
-    $(document).on('change','#timespan',function(){
+    $(document).on('change', '#timespan', function () {
         t = $(this).find("option:selected").attr('value');
         d3.json("/api/stats/?t=" + t).then(visualizePFE);
     });
@@ -9,19 +9,22 @@ $(document).ready(function () {
 
 function visualizePFE(systemStat) {
     const stats = systemStat.stats;
-    const parseTime = d3.timeParse("%s");
-    stats.forEach(function(d) {
-        d["timestamp"] = parseTime(d["timestamp"]);
-    });
     if (stats.length > 0) {
-        showGaugeChart("Ram Used", "#mem-gauge-chart", ((systemStat.total_memory - stats[0].ram_free) / systemStat.total_memory )* 100);
-        showGaugeChart("Disk Used", "#disk-gauge-chart", ((systemStat.total_disk - stats[0].disk_free) / systemStat.total_disk) * 100);
-        showGaugeChart("CPU Used", "#cpu-gauge-chart", stats[0].cpu_usage);
+        renderGaugeCharts(stats);
+        renderLineCharts(stats);
     }
 }
 
+function renderGaugeCharts(stats) {
+    showGaugeChart("Ram Used", "#mem-gauge-chart", stats[0].ram_used);
+    showGaugeChart("Disk Used", "#disk-gauge-chart", stats[0].disk_used);
+    showGaugeChart("CPU Used", "#cpu-gauge-chart", stats[0].cpu_used);
+    let memAllocated = formatBytes(stats[0].mem_alloc, 2);
+    $("span.number-display", "div#mem-alloc-number").text(memAllocated[0] + " " + memAllocated[1]);
+}
+
 function showGaugeChart(name, placeholder, per) {
-    return c3.generate({
+    c3.generate({
         bindto: placeholder,
         data: {
             columns: [
@@ -39,4 +42,47 @@ function showGaugeChart(name, placeholder, per) {
             height: 180
         }
     });
+}
+
+function renderLineCharts(stats) {
+    const timestamp = stats.map(s => s.timestamp * 1000);
+    const ramUsage = stats.map(s => s.ram_used);
+    const diskUsage = stats.map(s => s.disk_used);
+    const cpuUsage = stats.map(s => s.cpu_used);
+    const memAllocation = stats.map(s => formatBytes(s.mem_alloc)[0]);
+    showLineChart("Ram Usage", "#ram-chart", timestamp, ramUsage);
+    showLineChart("Disk Usage", "#disk-chart", timestamp, diskUsage);
+    showLineChart("CPU Usage", "#cpu-chart", timestamp, cpuUsage);
+    showLineChart("Memory Allocation", "#mem-alloc-chart", timestamp, memAllocation);
+}
+
+function showLineChart(name, placeholder, dataX, dataY) {
+    dataX.unshift("timestamp");
+    dataY.unshift(name);
+    c3.generate({
+        bindto: placeholder,
+        data: {
+            x: 'timestamp',
+            xFormat: '%Q',
+            columns: [dataX, dataY]
+        },
+        axis: {
+            x: {
+                type: 'timeseries',
+                tick: {
+                    format: '%H:%M'
+                }
+            }
+        },
+        size: {
+            height: 220
+        }
+    });
+}
+
+function formatBytes(a, b) {
+    if (0 === a) return "0 Bytes";
+    let c = 1024, d = b || 2, e = ["Bytes", "KB", "MB", "GB", "TB"],
+        f = Math.floor(Math.log(a) / Math.log(c));
+    return [parseFloat((a / Math.pow(c, f)).toFixed(d)), e[f]]
 }
