@@ -4,7 +4,7 @@ $(document).ready(function () {
         t = $(this).find("option:selected").attr('value');
         d3.json("/api/connections/?t=" + t).then(visualizeFS);
     });
-    d3.json("/api/connections/").then(visualizeFS);
+    d3.json("/api/connections/?t=" + t).then(visualizeFS);
 });
 
 function visualizeFS(connections) {

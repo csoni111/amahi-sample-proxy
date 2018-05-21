@@ -9,6 +9,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/disk"
 	"runtime"
+	"github.com/shirou/gopsutil/cpu"
 )
 
 // Logging client structure.
@@ -36,10 +37,11 @@ type ConnectionLog struct {
 
 // System Stats structure.
 type Stat struct {
-	Timestamp int64  `json:"timestamp"`
-	RamFree   uint64 `json:"ram_free"`
-	DiskFree  uint64 `json:"disk_free"`
-	MemAlloc  uint64 `json:"mem_alloc"`
+	Timestamp int64   `json:"timestamp"`
+	RamFree   uint64  `json:"ram_free"`
+	DiskFree  uint64  `json:"disk_free"`
+	MemAlloc  uint64  `json:"mem_alloc"`
+	CpuUsage  float64 `json:"cpu_usage"`
 }
 
 // New LogClient.
@@ -80,8 +82,8 @@ func initDb(dbPath string) (*sql.DB, error) {
 			return nil, err
 		}
 
-		statsTable := `CREATE TABLE stats (id INTEGER NOT NULL PRIMARY KEY, timestamp INTEGER NOT NULL, 
-					   ram_free BIGINT, disk_free BIGINT, mem_alloc BIGINT);`
+		statsTable := `CREATE TABLE stats (id INTEGER NOT NULL PRIMARY KEY, timestamp INTEGER NOT NULL,
+					   ram_free BIGINT, disk_free BIGINT, mem_alloc BIGINT, cpu_usage FLOAT);`
 		_, err = db.Exec(statsTable)
 		if err != nil {
 			return nil, err
@@ -111,10 +113,11 @@ func (l *LogClient) StatsMonitor() {
 	for {
 		vMemStat, _ := mem.VirtualMemory()
 		usageStat, _ := disk.Usage("/")
+		cpuUsage, _ := cpu.Percent(0, false)
 		var ms runtime.MemStats
 		runtime.ReadMemStats(&ms)
-		_, err := l.db.Exec("INSERT INTO stats(timestamp, ram_free, disk_free, mem_alloc) VALUES(?, ?, ?, ?)",
-			time.Now().Unix(), vMemStat.Available, usageStat.Free, ms.Alloc)
+		_, err := l.db.Exec("INSERT INTO stats(timestamp, ram_free, disk_free, mem_alloc, cpu_usage) " +
+			"VALUES(?, ?, ?, ?, ?)", time.Now().Unix(), vMemStat.Available, usageStat.Free, ms.Alloc, cpuUsage[0])
 		if err != nil {
 			return
 		}

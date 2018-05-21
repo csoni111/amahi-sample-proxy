@@ -10,6 +10,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/cpu"
+	"log"
 )
 
 func (d *Dashboard) InitApiRouter(router *mux.Router) {
@@ -47,9 +48,9 @@ func (d *Dashboard) connJson(w http.ResponseWriter, r *http.Request) {
 	var rows *sql.Rows
 	var err error
 	if t == 0 {
-		rows, err = db.Query("SELECT timestamp, event, fs_id FROM conn_log")
+		rows, err = db.Query("SELECT timestamp, event, fs_id FROM conn_log ORDER BY id DESC")
 	} else {
-		rows, err = db.Query("SELECT timestamp, event, fs_id FROM conn_log WHERE timestamp > ?", t)
+		rows, err = db.Query("SELECT timestamp, event, fs_id FROM conn_log WHERE timestamp > ? ORDER BY id DESC", t)
 	}
 	if err != nil {
 		handle(err)
@@ -79,10 +80,10 @@ func (d *Dashboard) connJson(w http.ResponseWriter, r *http.Request) {
 
 type SystemStat struct {
 	TotalMemory uint64 `json:"total_memory"`
-	TotalDisk	uint64 `json:"total_disk"`
-	NumCores	int32  `json:"num_cores"`
-	ModelName	string `json:"model_name"`
-	Stats		[]Stat `json:"stats"`
+	TotalDisk   uint64 `json:"total_disk"`
+	NumCores    int32  `json:"num_cores"`
+	ModelName   string `json:"model_name"`
+	Stats       []Stat `json:"stats"`
 }
 
 func (d *Dashboard) systemStatsJson(w http.ResponseWriter, r *http.Request) {
@@ -92,9 +93,10 @@ func (d *Dashboard) systemStatsJson(w http.ResponseWriter, r *http.Request) {
 	var rows *sql.Rows
 	var err error
 	if t == 0 {
-		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc FROM stats")
+		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc FROM stats ORDER BY id DESC")
 	} else {
-		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc FROM stats WHERE timestamp > ?", t)
+		rows, err = db.Query("SELECT timestamp, ram_free, disk_free, mem_alloc, cpu_usage FROM stats "+
+			"WHERE timestamp > ? ORDER BY id DESC", t)
 	}
 	if err != nil {
 		handle(err)
@@ -102,23 +104,29 @@ func (d *Dashboard) systemStatsJson(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 	stats := make([]Stat, 0)
 	for rows.Next() {
-		var stat Stat
-		err = rows.Scan(&stat.Timestamp, &stat.RamFree, &stat.DiskFree, &stat.MemAlloc)
+		var s Stat
+		err = rows.Scan(&s.Timestamp, &s.RamFree, &s.DiskFree, &s.MemAlloc, &s.CpuUsage)
 		if err != nil {
 			handle(err)
 		}
-		stats = append(stats,stat)
+		stats = append(stats, s)
 	}
 	vMemStat, _ := mem.VirtualMemory()
 	usageStat, _ := disk.Usage("/")
-	infoStats, _ := cpu.Info()
-	infoStat := infoStats[0]
+	infoStats, err := cpu.Info()
+	var infoStat cpu.InfoStat
+	if err != nil {
+		log.Fatal(err)
+		infoStat = cpu.InfoStat{}
+	} else {
+		infoStat = infoStats[0]
+	}
 	systemStats := SystemStat{
 		TotalMemory: vMemStat.Total,
-		TotalDisk: usageStat.Total,
-		NumCores: infoStat.Cores,
-		ModelName: infoStat.ModelName,
-		Stats: stats,
+		TotalDisk:   usageStat.Total,
+		NumCores:    infoStat.Cores,
+		ModelName:   infoStat.ModelName,
+		Stats:       stats,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(systemStats)

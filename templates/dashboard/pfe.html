@@ -1,28 +1,34 @@
 {{define "title"}}PFE Dashboard{{end}}
 
+{{define "extracss"}}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.1/c3.min.css" rel="stylesheet" type="text/css" />
+{{end}}
+
 {{define "body"}}
 <div class="container-fluid">
     <div class="row">
-        <div class="col-sm-10">
+        <div class="col-sm-3">
             <div class="chart-wrapper">
                 <div class="chart-title">
-                    Connections Time Chart
+                    Memory Usage
                 </div>
-                <div id="conn-chart" class="chart-stage"></div>
-                <div class="chart-notes">
-                    Number of connections/disconnections with Time
-                </div>
+                <div id="mem-gauge-chart" class="chart-stage"></div>
             </div>
         </div>
-        <div class="col-sm-2">
+        <div class="col-sm-3">
             <div class="chart-wrapper">
                 <div class="chart-title">
-                    Number of Unique FS
+                    Disk Usage
                 </div>
-                <div id="unique-fs-number" class="chart-stage"></div>
-                <div class="chart-notes">
-                    Total number of unique file servers connected over time
+                <div id="disk-gauge-chart" class="chart-stage"></div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    CPU Usage
                 </div>
+                <div id="cpu-gauge-chart" class="chart-stage"></div>
             </div>
         </div>
     </div>
@@ -54,5 +60,6 @@
 {{end}}
 
 {{define "scripts"}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.1/c3.min.js"></script>
 <script src="../../static/js/pfe-charts.js"></script>
 {{end}}
