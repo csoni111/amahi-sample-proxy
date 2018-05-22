@@ -27,15 +27,25 @@ func handle(err error) {
 	}
 }
 
+func handleForFS(err error, fs *FS) {
+	if err != nil {
+		if fs.streamCounter > 0 {
+			fs.streamCounter -= 1
+		}
+		panic(err)
+	}
+}
+
 type Proxy struct {
 	fileServers map[string]FS
 }
 
 type FS struct {
-	clientConn *http2.ClientConn
-	conn       net.Conn
-	session    string
-	fsInfo     FSInfo
+	clientConn    *http2.ClientConn
+	conn          net.Conn
+	session       string
+	fsInfo        FSInfo
+	streamCounter int
 }
 
 type FSInfo struct {
@@ -89,13 +99,20 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 	if _, exist := r.Header["Connection"]; exist {
 		r.Header.Del("Connection")
 	}
+	// Add 1 to stream counter on begin of request
+	fs.streamCounter += 1
 
 	res, err := fs.clientConn.RoundTrip(r)
-	handle(err)
+	handleForFS(err, &fs)
 
 	_, err = io.Copy(w, res.Body)
-	handle(err)
-	handle(res.Body.Close())
+	handleForFS(err, &fs)
+	handleForFS(res.Body.Close(), &fs)
+
+	// Subtract 1 from stream counter on completion of request
+	if fs.streamCounter > 0 {
+		fs.streamCounter -= 1
+	}
 
 	return err
 }
@@ -179,7 +196,7 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 	clientConn, err := transport.NewClientConn(conn)
 	handle(err)
 
-	fs := FS{clientConn, conn, token, fsInfo}
+	fs := FS{clientConn, conn, token, fsInfo, 0}
 	p.fileServers[token] = fs
 	fmt.Println("FS added")
 
@@ -237,7 +254,7 @@ func main() {
 	}
 
 	proxy := new(Proxy)
-	dashboard := Dashboard{dbPath: dbPath}
+	dashboard := Dashboard{dbPath: dbPath, fileServers: &proxy.fileServers}
 	proxy.fileServers = make(map[string]FS)
 
 	server := new(http.Server)

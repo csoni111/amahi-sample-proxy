@@ -11,9 +11,37 @@ import (
 	"log"
 )
 
+type SystemStat struct {
+	NumCores  int32  `json:"num_cores"`
+	ModelName string `json:"model_name"`
+	Stats     []Stat `json:"stats"`
+}
+
+type FSStat struct {
+	TotalConnected int `json:"total_connected"`
+	TotalStreaming int `json:"total_streaming"`
+}
+
 func (d *Dashboard) InitApiRouter(router *mux.Router) {
+	router.HandleFunc("/fs/", d.fsJson).Methods("GET")
 	router.HandleFunc("/connections/", d.connJson).Methods("GET")
 	router.HandleFunc("/stats/", d.systemStatsJson).Methods("GET")
+}
+
+func (d *Dashboard) fsJson(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	totalCount, streamCount := 0, 0
+	for _, v := range *d.fileServers {
+		totalCount += 1
+		if v.streamCounter > 0 {
+			streamCount += 1
+		}
+	}
+	fsStat := FSStat{
+		TotalConnected: totalCount,
+		TotalStreaming: streamCount,
+	}
+	json.NewEncoder(w).Encode(fsStat)
 }
 
 func (d *Dashboard) parseTimeParam(r *http.Request) (t int64) {
@@ -76,12 +104,6 @@ func (d *Dashboard) connJson(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(connections)
 }
 
-type SystemStat struct {
-	NumCores    int32  `json:"num_cores"`
-	ModelName   string `json:"model_name"`
-	Stats       []Stat `json:"stats"`
-}
-
 func (d *Dashboard) systemStatsJson(w http.ResponseWriter, r *http.Request) {
 	db := d.getDb()
 	defer db.Close()
@@ -117,9 +139,9 @@ func (d *Dashboard) systemStatsJson(w http.ResponseWriter, r *http.Request) {
 		infoStat = infoStats[0]
 	}
 	systemStats := SystemStat{
-		NumCores:    infoStat.Cores,
-		ModelName:   infoStat.ModelName,
-		Stats:       stats,
+		NumCores:  infoStat.Cores,
+		ModelName: infoStat.ModelName,
+		Stats:     stats,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(systemStats)
@@ -133,4 +155,3 @@ func (d *Dashboard) getDb() (db *sql.DB) {
 	}
 	return
 }
-

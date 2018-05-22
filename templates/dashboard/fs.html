@@ -4,6 +4,35 @@
 <div class="container-fluid">
 
     <div class="row">
+        <div class="col-sm-3">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Currently Connected FS
+                </div>
+                <div id="connected-fs-number" class="number-chart chart-stage">
+                    <span class="number-display"></span>
+                </div>
+                <div class="chart-notes">
+                    Number of currently connected file servers
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="chart-wrapper">
+                <div class="chart-title">
+                    Currently Streaming FS
+                </div>
+                <div id="streaming-fs-number" class="number-chart chart-stage">
+                    <span class="number-display"></span>
+                </div>
+                <div class="chart-notes">
+                    Number of currently streaming file servers
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
         <div class="col-sm-10">
             <div class="chart-wrapper">
                 <div class="chart-title">
@@ -29,7 +58,7 @@
     </div>
 
     <div class="row">
-        <div class="col-sm-4 col-md-3">
+        <div class="col-sm-6 col-md-6">
             <div class="chart-wrapper">
                 <div class="chart-title">
                     Version Pie Chart
@@ -37,7 +66,7 @@
                 <div id="version-pie" class="chart-stage"></div>
             </div>
         </div>
-        <div class="col-sm-8 col-md-5">
+        <div class="col-sm-6 col-md-6">
             <div class="chart-wrapper">
                 <div class="chart-title">
                     FS Architecture Pie

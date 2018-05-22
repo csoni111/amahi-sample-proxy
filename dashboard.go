@@ -9,6 +9,7 @@ import (
 
 type Dashboard struct {
 	dbPath *string
+	fileServers *map[string]FS
 }
 
 func (d *Dashboard) InitDashboardRouter(router *mux.Router) {

@@ -4,8 +4,19 @@ $(document).ready(function () {
         t = $(this).find("option:selected").attr('value');
         d3.json("/api/connections/?t=" + t).then(visualizeFS);
     });
-    d3.json("/api/connections/?t=" + t).then(visualizeFS);
+    loadCharts();
+    setInterval(loadCharts, 5000);
 });
+
+function loadCharts() {
+    d3.json("/api/connections/?t=" + t).then(visualizeFS);
+    d3.json("/api/fs/").then(presentFSStats);
+}
+
+function presentFSStats(stat) {
+    $("span.number-display", "div#connected-fs-number").text(stat.total_connected);
+    $("span.number-display", "div#streaming-fs-number").text(stat.total_streaming);
+}
 
 function visualizeFS(connections) {
     const parseTime = d3.timeParse("%s");

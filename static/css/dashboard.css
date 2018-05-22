@@ -85,10 +85,10 @@ span.number-display {
 }
 
 div#mem-alloc-number {
-    font-size: 42pt;
+    font-size: 42pt !important;
 }
 
-div#unique-fs-number {
+div.number-chart {
     font-size: 60pt;
 }
 
