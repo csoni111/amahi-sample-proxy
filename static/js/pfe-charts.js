@@ -49,18 +49,24 @@ function renderLineCharts(stats) {
     const ramUsage = stats.map(s => s.ram_used);
     const diskUsage = stats.map(s => s.disk_used);
     const cpuUsage = stats.map(s => s.cpu_used);
-    const memAllocation = stats.map(s => formatBytes(s.mem_alloc)[0]);
-    showLineChart("Ram Usage", "#ram-chart", timestamp, ramUsage);
-    showLineChart("Disk Usage", "#disk-chart", timestamp, diskUsage);
-    showLineChart("CPU Usage", "#cpu-chart", timestamp, cpuUsage);
-    showLineChart("Memory Allocation", "#mem-alloc-chart", timestamp, memAllocation);
+    const memAllocation = stats.map(s => (s.mem_alloc / 1024 / 1024));
+    showLineChart("Ram Usage", "#ram-chart", timestamp, ramUsage, "%");
+    showLineChart("Disk Usage", "#disk-chart", timestamp, diskUsage, "%");
+    showLineChart("CPU Usage", "#cpu-chart", timestamp, cpuUsage, "%");
+    showLineChart("Memory Allocation", "#mem-alloc-chart", timestamp, memAllocation, " MB");
 }
 
-function showLineChart(name, placeholder, dataX, dataY) {
+function showLineChart(name, placeholder, dataX, dataY, yLabel) {
     dataX.unshift("timestamp");
     dataY.unshift(name);
     c3.generate({
         bindto: placeholder,
+        padding: {
+            top: 0,
+            right: 40,
+            bottom: 15,
+            left: 50,
+        },
         data: {
             x: 'timestamp',
             xFormat: '%Q',
@@ -71,6 +77,11 @@ function showLineChart(name, placeholder, dataX, dataY) {
                 type: 'timeseries',
                 tick: {
                     format: '%H:%M'
+                }
+            },
+            y : {
+                tick: {
+                    format: function (d) { return d + yLabel; }
                 }
             }
         },
