@@ -37,7 +37,7 @@ func handleForFS(err error, fs *FS) {
 }
 
 type Proxy struct {
-	fileServers map[string]FS
+	fileServers map[string]*FS
 }
 
 type FS struct {
@@ -55,7 +55,7 @@ type FSInfo struct {
 	Arch      string `json:"arch"`
 }
 
-func (p Proxy) pingFSPeriodically(fs FS) {
+func (p Proxy) pingFSPeriodically(fs *FS) {
 	const period = 59 * time.Second // time spent sleeping
 
 	for {
@@ -103,11 +103,11 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 	fs.streamCounter += 1
 
 	res, err := fs.clientConn.RoundTrip(r)
-	handleForFS(err, &fs)
+	handleForFS(err, fs)
 
 	_, err = io.Copy(w, res.Body)
-	handleForFS(err, &fs)
-	handleForFS(res.Body.Close(), &fs)
+	handleForFS(err, fs)
+	handleForFS(res.Body.Close(), fs)
 
 	// Subtract 1 from stream counter on completion of request
 	if fs.streamCounter > 0 {
@@ -117,7 +117,7 @@ func (p *Proxy) RequestFromFS(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
-func (p *Proxy) getFS(r *http.Request) (fs FS, exist bool) {
+func (p *Proxy) getFS(r *http.Request) (fs *FS, exist bool) {
 	// read the session token from header
 	token := r.Header.Get("Session")
 	if token == "" {
@@ -125,14 +125,14 @@ func (p *Proxy) getFS(r *http.Request) (fs FS, exist bool) {
 		token = r.FormValue("session")
 		if token == "" {
 			// No session token sent in the request
-			return FS{}, false
+			return nil, false
 		}
 	}
 	fs, exist = p.fileServers[token]
 	return
 }
 
-func (p *Proxy) removeFS(fs FS) {
+func (p *Proxy) removeFS(fs *FS) {
 	logClient.Log(Disconnection, &fs.fsInfo, fs.session)
 	if oldFs, exist := p.fileServers[fs.session]; exist && oldFs == fs {
 		fs.conn.Close()
@@ -197,14 +197,14 @@ func (p *Proxy) ServeFS(w http.ResponseWriter, r *http.Request) {
 	handle(err)
 
 	fs := FS{clientConn, conn, token, fsInfo, 0}
-	p.fileServers[token] = fs
+	p.fileServers[token] = &fs
 	fmt.Println("FS added")
 
 	// Log the new fs connection
 	logClient.Log(Connection, &fsInfo, token)
 
 	// ping the fs periodically in a goroutine to see if the connection is up
-	go p.pingFSPeriodically(fs)
+	go p.pingFSPeriodically(&fs)
 }
 
 func (p *Proxy) ServeClient(w http.ResponseWriter, r *http.Request) {
@@ -255,7 +255,7 @@ func main() {
 
 	proxy := new(Proxy)
 	dashboard := Dashboard{dbPath: dbPath, fileServers: &proxy.fileServers}
-	proxy.fileServers = make(map[string]FS)
+	proxy.fileServers = make(map[string]*FS)
 
 	server := new(http.Server)
 	router := mux.NewRouter()
