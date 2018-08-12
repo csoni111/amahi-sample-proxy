@@ -1,0 +1,56 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{template "title"}}</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/dc/3.0.3/dc.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Dashboard -->
+    <link rel="stylesheet" type="text/css" href="../../static/css/dashboard.css" />
+    {{template "extracss"}}
+</head>
+
+<body class="keen-dashboard">
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/dashboard/">PFE Dashboard</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-left">
+                    <li><a href="/dashboard/">PFE</a></li>
+                    <li><a href="/dashboard/fs/">FS</a></li>
+                    <li><a href="/dashboard/clients/">Clients</a></li>
+                </ul>
+                <select id="timespan" class="navbar-right">
+                    <option id="1h" value="1" selected>Last 1 hour</option>
+                    <option id="6h" value="6">Last 6 hours</option>
+                    <option id="24h" value="24">Last 24 hours</option>
+                    <option id="all" value="all">Since the start</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    {{template "body"}}
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://d3js.org/d3-queue.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.12/crossfilter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dc/3.0.3/dc.js"></script>
+{{template "scripts"}}
+</html>
+{{end}}
+
+{{define "extracss"}}{{end}}
